@@ -30,7 +30,7 @@ jobs:
 
       - name: Clone Repository
         env:
-          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/DARKXSIDE78/AdvanceAutoAnime.git
+          REPO_URL: https://x-access-token:${{ secrets.GAT_TOKEN }}@github.com/DARKXSIDE78/AdvanceAutoAnime.git
         run: |
           git clone $REPO_URL
           cd AdvanceAutoAnime
