@@ -1,0 +1,53 @@
+name: Automated Integration Testing
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # every 6 hours
+  workflow_dispatch:        # manual trigger
+
+concurrency:
+  group: integration-testing
+  cancel-in-progress: false
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 305  # just over 5 hours max runtime to allow for completion
+
+    steps:
+      - name: Setup Environment
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y python3-pip ffmpeg git curl
+
+      - name: Install Network Tools
+        run: |
+          curl -fsSL https://tailscale.com/install.sh | sh
+
+      - name: Configure Network
+        run: |
+          sudo tailscale up --authkey ${{ secrets.TAILSCALE_AUTH_KEY }} --hostname test-runner --ssh --accept-routes
+
+      - name: Clone Repository
+        env:
+          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/DARKXSIDE78/AdvanceAutoAnime.git
+        run: |
+          git clone $REPO_URL
+          cd AdvanceAutoAnime
+          pip3 install -r requirements.txt
+
+      - name: Run Extended Tests
+        run: |
+          cd AdvanceAutoAnime
+          python3 -m bot &
+          # Randomize sleep between 4.5 and 5.5 hours to avoid patterns (16200 to 19800 seconds)
+          SLEEP_TIME=$((16200 + RANDOM % 3600))
+          sleep $SLEEP_TIME
+
+      - name: Cleanup
+        if: always()
+        run: |
+          sudo tailscale logout
+          rm -rf AdvanceAutoAnime
+          sudo apt-get clean
+          rm -rf /var/lib/apt/lists/*
